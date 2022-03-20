@@ -1,5 +1,4 @@
 # survival
-Survival and longitudinal data analysis 
 
 **Survival analysis is the study of the probability of an event occurence (death, complication, relapse, infection,...) over time which is called *time-to-event* according to explanatory factors**. Thus, in survival analysis we look for:
 - The probability to survive at least a certain time "t" from a reference time 
@@ -44,6 +43,7 @@ The survival function is a function that gives the probability that a patient, d
 ![image](https://user-images.githubusercontent.com/101581394/159171177-c85d3f89-cf62-49a5-897a-cbc12ab1f2fb.png)
 
 Instantaneous risk (hazard rate): For a given t, this is the probability that the event probability that the event will occur within a small interval of time after t knowing that it has not occurred until t.
+
 ![image](https://user-images.githubusercontent.com/101581394/159171925-f92b4914-18d1-4a33-9756-a8f54d17bc91.png)
 
 ## Parametric survival function
