@@ -1,0 +1,130 @@
+---
+title: "survival_p"
+author: "AGBOHOUTO OMRAAM OLIVIER"
+date: '2022-03-20'
+output: html_document
+---
+
+```{r echo=FALSE}
+library(survival)
+library(MASS)
+library(tidyverse)
+```
+
+# Dataset
+The data we will use in the parametric estimation are the $\texttt{veteran}$ data which come from the $\texttt{survival}$ package.
+This dataset provided information on randomized trial of two treatment regimens for lung cancer of veteran administration. 
+There is 137 individuals and 8 variables. Each line represent a description of one individual (veteran) who have received a treatment (standard or test) and his status in this treatment.
+Variable of interest:
+- Time: survival time
+- Status: censoring status. This variable define the event of interest.
+The others variables as $\texttt{age}$, $\texttt{celltype}$, $\texttt{prior}$ can be used as factor in a model. 
+More information on this dataset here: https://rdrr.io/cran/survival/man/veteran.html
+```{r}
+veteran
+data(cancer, package="survival")
+```
+
+```{r}
+head(veteran)
+```
+
+```{r}
+summary(veteran)
+```
+We can plot the cumulative distribution function of the duration variable $\texttt{time}$ in order to see if this look like or correspond to a known distribution. In this case, the c.d.f makes think to exponential family. 
+```{r}
+cdf_time<-ecdf(veteran$time)
+plot(ecdf(veteran$time),main="CDF Time",xlab="Time")
+```
+
+# Survival function in parametric case
+
+We will go directly to estimation of survival function using an assumption on the distribution of survival distribution.
+We make the hypothesis that time of survival follow exponential and weibull distribution.
+Let's estimate the parameters and survival function with these hypothesis.
+Here the data are censored like the majority of the real life data.
+We use package $\texttt{survival}$ to make survival analysis. To learn about function in this package go here : https://cran.r-project.org/web/packages/survival/survival.pdf
+
+
+## Exponential distribution
+
+Here we make the assumption that the survival times follow the exponential law. We will determine the parameter $\lambda$ of this distribution. 
+
+```{r}
+#Creation of the survival object ie right,left censored data
+cens_veteran=Surv(veteran$time,veteran$status)
+cens_veteran
+```
+
+```{r}
+# Estimation of survival function using exponential distribution and without factors
+expo_model=survreg(cens_veteran~1 , veteran, dist="exponential")
+summary(expo_model)
+```
+We can notice that algorithm of Newton-Raphson is used for the optimisation of Loglike.
+The estimate of the parameter $\lambda$ by the parametric model of exponential law is given by :
+$$\lambda=\exp(- coef)= \exp(-4.8689) =0.007$$. 
+
+The instantaneous risk or hazard ratio is also equal to: $$h(t)=0.007$$.
+
+The estimated survival function is therefore: $$\hat{S}(t)=exp(-0,007t)$$
+
+Let's represent this law in terms of survival times:
+
+```{r}
+plot(veteran$time,1-pexp(veteran$time,0.007681810634),ylab="Survie estimée",
+     main="Fonction de survie estimée par la loi exponentielle",xlab="Time",
+     cex.main=0.9,cex.lab=0.9)
+```
+## Weibull distribution
+
+We make the assumption that the censored survival times follow the weibull distribution. Let's estimate the parameters $\alpha$ and $\gamma$ of the weibull distribution."
+Notice that it's the parameter $\texttt{dist}$ of $\texttt{survreg}$ function which allow to choose the distribution.
+```{r}
+wei_model=survreg(cens_veteran~1 , veteran, dist="weibull")
+summary(wei_model)
+```
+The estimate of the parameters $\alpha$ and $\gamma$ of Weibull distribution are: 
+$$\alpha=\exp(Intercept)=120,674$$ $$\gamma=\frac{1}{scale}=0,854$$
+The survival function estimated by the Weibull distribution is thus written : $$S(t)=\exp(-120,674t^{0,854})$$
+Hazard ratio is then: $$h(t)=103,06t^{-0,146}$$
+
+Let's represent this law in terms of survival times:
+
+```{r}
+plot(veteran$time,1-pweibull(veteran$time,0.854,120.674),ylab="survival",
+     main="Fonction de survie estimée par la loi de weibull",xlab="Time",cex.main=0.9,cex.lab=0.9)
+```
+## Comparison with estimate survival function using kaplan meier method 
+
+```{r}
+
+plot(veteran$time,pweibull(veteran$time,0.854,120.674),ylab="cdf",pch=17,
+     main="Estimated cdf",xlab="Time",cex.main=0.9,cex.lab=0.9,col='red')
+par(new = T)
+plot(veteran$time,pexp(veteran$time,0.007681810634),pch=16, col='blue',axes=F,xlab="",ylab="")
+par(new = T)
+lines(ecdf(veteran$time),col='black',xlab="",ylab="",pch=15)
+legend(x="bottomright",legend=c("Empirical CDF","Weibull distribution", "Exponential distribution"),text.col=c("red",'blue',"black"),pch=c(17,16,15),col=c("red","blue","black"))
+```
+     
+We notice that the graph in black representing the empirical distribution function is very close to the survival function estimated by the exponential distribution or by the weibull distribution.
+
+```{r}
+
+model_veteran=survfit(cens_veteran~1)
+plot(veteran$time,1-pweibull(veteran$time,0.854,120.674),ylab="survival",pch=17,
+     main="Estimated Survival function",xlab="Time",cex.main=0.9,cex.lab=0.9,col='red')
+par(new = T)
+plot(veteran$time,1-pexp(veteran$time,0.007681810634),pch=16, col='blue',axes=F,xlab="",ylab="")
+par(new = T)
+lines(model_veteran,xlab="",pch=15,ylab="",xlab="",col="black")
+legend(x="topright",legend=c("Kaplan Meier","Weibull distribution", "Exponential distribution"),text.col=c("black","red",'blue'),pch=c(17,16,15),col=c("black","red","blue"))
+```
+When we compare the estimated survival function using parametric model such as exponential and weibull law we can notice that it is so close to the estimated survival function using non parametric method.
+
+## Interpretation of result
+Using exponential distribution we can say that the probability to be alive after t=100 is about 50% or there is 1 chance over 2 to survive after t=100 (unit of time). While the probability to be alive after t=500 using the same distribution is 3%. 
+Using Weibull distribution, we can say that, the probability to be alive after t=100 is about 49%.
+These probabilities may depend on the type of treatment and test of log rank can confirm it or not.
