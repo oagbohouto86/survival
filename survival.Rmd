@@ -8,7 +8,6 @@ output: html_document
 ```{r echo=FALSE}
 library(survival)
 library(MASS)
-library(tidyverse)
 ```
 
 # Dataset
@@ -23,10 +22,6 @@ More information on this dataset here: https://rdrr.io/cran/survival/man/veteran
 ```{r}
 veteran
 data(cancer, package="survival")
-```
-
-```{r}
-head(veteran)
 ```
 
 ```{r}
