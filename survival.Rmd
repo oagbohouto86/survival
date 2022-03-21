@@ -87,7 +87,7 @@ summary(wei_model)
 ```
 The estimate of the parameters $\alpha$ and $\gamma$ of Weibull distribution are: 
 $$\alpha=\exp(Intercept)=120,674$$ $$\gamma=\frac{1}{scale}=0,854$$
-The survival function estimated by the Weibull distribution is thus written : $$S(t)=\exp(-120,674t^{0,854})$$
+The survival function estimated by the Weibull distribution is thus written : $$S(t)=\exp((-\frac{t}{120.674})^{0,854})$$
 Hazard ratio is then: $$h(t)=103,06t^{-0,146}$$
 
 Let's represent this law in terms of survival times:
@@ -125,6 +125,6 @@ legend(x="topright",legend=c("Kaplan Meier","Weibull distribution", "Exponential
 When we compare the estimated survival function using parametric model such as exponential and weibull law we can notice that it is so close to the estimated survival function using non parametric method.
 
 ## Interpretation of result
-Using exponential distribution we can say that the probability to be alive after t=100 is about 50% or there is 1 chance over 2 to survive after t=100 (unit of time). While the probability to be alive after t=500 using the same distribution is 3%. 
-Using Weibull distribution, we can say that, the probability to be alive after t=100 is about 49%.
+Using exponential distribution we can say that the probability to be alive after t=100 is about 48% or there is 1 chance over 2 to survive after t=100 (unit of time). While the probability to be alive after t=500 using the same distribution is 3%. 
+Using Weibull distribution, we can say that, the probability to be alive after t=100 is about 43%.
 These probabilities may depend on the type of treatment and test of log rank can confirm it or not.
