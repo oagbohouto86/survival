@@ -1,0 +1,269 @@
+---
+title: "survival_cox"
+output: html_notebook
+---
+
+## Data
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(KMsurv)
+library(tidyverse)
+library(survival)
+```
+
+The bmt dataset (KMsurv package) contains data for 137 patients who underwent
+bone marrow transplantation. For more details on the data, https://www.rdocumentation.org/packages/KMsurv/versions/0.1-5/topics/bmt
+
+The goal of this work is to explain the time, denoted DFS (disease free survival), to relapse or death (variable t2 with status indicator d3). In other words, we will determine the probability of relapse-free survival after a bone marrow transplant. For this we have the censoring indicator variable d3 'Disease Free Survival Indicator 1-Dead Or Relapsed, 0-Alive Disease Free' and the duration variable t2 'Disease Free Survival Time'. 
+The others can be used as explanatory variables of this survival probability according to needs and expectations. We will exclude some variables such as t1, d1, d2, ta, da, tc, dc. They can be kept if you are interested in these variables. We are not :).
+
+```{r}
+data(bmt)
+bmt = bmt %>% select(-c(t1,d1,d2,ta,da,tc,dc))
+```
+
+```{r}
+head(bmt,n=10)
+help(bmt)
+```
+
+## Préparation des données
+
+Nous allons dans un premier temps donner des noms de variables plus expressifs.
+
+```{r}
+bmt2=bmt
+names(bmt2) = c("group",    "dfs" ,   "dfsstatus"  , "tp" ,   "dp" ,   "agep" ,   "aged"  ,  "genderp"  ,  "genderd",    "cmvp"  ,  "cmvd"  ,  "waiting"  ,  "fab" ,   "hospital" ,   "mtw"  )
+glimpse(bmt2) #sorte de transpose juste pour voir les variables renommées
+```
+Ensuite nous allons recoder les valeurs des variables qualitatives:
+- $\texttt{group}$ en ALL, Low, High
+- $\texttt{death}$ en 1-Dead 0-Alive
+- $\texttt{relapse}$ en 1-Relapsed, 0-Disease Free
+- $\texttt{genderp}$ en 1-Male, 0-Female
+- $\texttt{genderd}$ en 1-Male, 0-Female
+- $\texttt{cmvp}$ en 1-CMV Positive, 0-CMV Negative
+- $\texttt{cmvd}$ en 1-CMV Positive, 0-CMV Negative
+- $\texttt{hospital}$ en 1-The Ohio State University, 2-Alferd , 3-St. Vincent, 4-Hahnemann
+
+
+```{r}
+bmt2$group = recode(bmt2$group, "1"="ALL","2"="Low","3"="High")
+bmt2$genderp = recode(bmt2$genderp, "1"="Male","0"="Female")
+bmt2$genderd = recode(bmt2$genderd, "1"="Male","0"="Female")
+bmt2$cmvp = recode(bmt2$cmvp, "1"="Positive","0"="Negative")
+bmt2$cmvd = recode(bmt2$cmvd, "1"="Positive","0"="Negative")
+bmt2$hospital = recode(bmt2$hospital , "1" = "Ohio State U.", "2" = "Alferd" , "3" = "St. Vincent", "4" = "Hahnemann")
+bmt2$dp = recode(bmt2$dp, "1"="Return Normal","0"="Not Return normal")
+bmt2$dfsstatus = recode(bmt2$dfsstatus, "Dead Or Relapsed"=1,"Alive Disease Free"=0)
+bmt2$mtw = recode(bmt2$mtw, "1"="Yes","0"="No")
+glimpse(bmt2)
+```
+
+
+```{r}
+bmt2 %>% drop_na()
+```
+
+## Etude des variables
+
+### Event of interest
+```{r}
+
+table(bmt2$dfsstatus)*100/sum(table(bmt2$dfsstatus))
+```
+
+```{r}
+summary(bmt2$dfs)
+ggplot(bmt2, aes(x=dfs)) + ggtitle('Histogram of dfs')+
+ geom_histogram(aes(y=..density..), colour="black", fill="white",bins=30)+
+ geom_density(alpha=.2, fill="#FF6666") 
+```
+
+```{r}
+ head(bmt2)
+```
+### Indepedents variables
+continue: "tp", "agep" ,   "aged",  "waiting"
+
+```{r}
+cbind(bmt2$tp,bmt2$agep, bmt2$aged, bmt2$waiting)
+```
+
+```{r}
+bmtcor <- cor(cbind(bmt2$tp,bmt2$agep, bmt2$aged, bmt2$waiting),method="spearman")#Spearman test robuste
+bmtcor
+corrplot(as.matrix(bmtcor), method='color', addCoef.col = "black", type="lower", tl.col="black", tl.srt=45,title='Matrice de corrélation')
+```
+It is clear that the ages of the donors and patients are correlated. We can therefore do without one of them in the model depending on the needs of the study. Or keep both of them.
+We can also check correlation between discrete variable with fisher exact test (non parametric test) and between discrete and continue variables using  mann withney or kruskall wallis. 
+
+discrete: "group",  "dp" , "genderp"  ,  "genderd",    "cmvp"  ,  "cmvd"  ,  "fab" ,  "hospital" 
+
+
+```{r}
+fisher.test(bmt2$genderd,bmt2$genderp)
+wilcox.test(bmt2$tp~bmt2$genderp)
+kruskal.test(bmt2$tp~bmt2$hospital)
+```
+
+Instead of looking for correlation between independents variables or between dependent and independent variables, we can use stepAIC (backward or forward) method to perform model selection. 
+
+## Raw Cox model 
+
+```{r}
+library(MASS)
+cox_model_raw = stepAIC(coxph(Surv(dfs,dfsstatus)~group+tp+dp+agep+aged+genderp+
+                        genderd+cmvp+cmvd+waiting+
+                        fab+hospital,data=bmt2),trace=F)
+summary(cox_model_raw)
+```
+
+```{r}
+library(survminer)
+ggsurvplot(survfit(cox_model_raw), conf.int = FALSE, 
+           surv.median.line="hv",xlab="Time",ylab="Disease Free Survival Indicator",
+           break.time.by=365,title=" Disease Free Survival curve",
+           risk.table = TRUE,tables.height = 0.30,
+           font.main = c(12, "bold", "darkblue"),
+           font.x = c(8, "bold.italic", "red"),
+           font.y = c(8, "bold.italic", "darkred"),
+           font.tickslab = c(8, "plain", "darkgreen"),  
+           data = bmt2)
+```
+           
+The model is globally significant as shown by the three likelihood ratio tests, the Wald test and the score test (p-value < 0.05).
+
+But before interpreting the coefficients, it is necessary to check whether the model respects the proportional hazards or log-linearity hypotheses using Schoenfled residu test, or whether the functional forms of the continuous explanatory variables are correct (martingale residu test).
+
+
+```{r}
+cox.zph(cox_model_raw)
+par(mfrow=c(2,4))
+plot(cox.zph(cox_model_raw))
+```
+Using the Schoenfled residual test, we cannot reject the null hypothesis of proportional risk (p-value=0.451). One could think that the model respects the null hypothesis of proportional risk.
+
+But be careful. We have a variable $\texttt{tp}$ time to platelet recovery which depends on time. This is called a time depend covariate (tdc). So it will be necessary to handle this.
+
+To manage this we can simply consider that the individuals can be divided into two parts of time: 
+- part 1: from study entry t0 ($tstart$) to tp (tstop)  
+- part 2: from tp ($tstart$) to the end of the censoring date ie dfs (tstop)
+In other words, each individual for whom the censor time is after tp (dfs>tp) thus has two rows in the new dataset. The individuals for which dfs<tp then there will be no split of this patient.
+It is realized with either the function $\texttt{survsplit}$ or $\texttt{tmerge}$. With the function $\texttt{survsplit}$ it will be necessary to define the cut-off time to be used to split each patient.
+
+
+```{r}
+bmt2$id = c(1:nrow(bmt2))
+bmt2_merge <- tmerge(bmt2,bmt2,id=id,endpt=event(dfs,dfsstatus))
+bmt2_merge <- tmerge(bmt2_merge,bmt2,id=id,p_recovery=tdc(tp)) #adds platelet recovery as tdc
+#bmt2_merge)
+head(bmt2_merge)
+head(bmt2)
+```
+
+Après avoir splité le jeu de données en introduisant la variable tdc p_recovery, nous ajustons le modèle de Cox avec une tdc.
+
+```{r}
+bmt2$hospital = recode(bmt2$hospital , "1" = "Ohio State U.", "2" = "Alferd" , "3" = "St. Vincent", "4" = "Hahnemann")
+```
+
+```{r}
+cox_model_raw2 = stepAIC(coxph(Surv(tstart,tstop,endpt)~group+agep+aged+genderp+
+                        genderd+cmvp+cmvd+waiting+p_recovery+
+                        fab+hospital,data=bmt2_merge),trace=F)
+summary(cox_model_raw2)
+```
+```{r}
+cox.zph(cox_model_raw2)
+par(mfrow=c(2,4))
+plot(cox.zph(cox_model_raw2))
+```
+It can be noted that in this model the variable $texttt{hospital} does not respect the assumption of proportionality of risks. One solution for discrete variables is to stratify the variable according to its modalities in the model. *This is called a stratified Cox model*.
+
+```{r}
+cox_model_raw3 = stepAIC(coxph(Surv(tstart,tstop,endpt)~group+agep+aged+genderp+
+                        genderd+cmvp+cmvd+waiting+p_recovery+
+                        fab+strata(hospital),data=bmt2_merge),trace=F)
+summary(cox_model_raw3)
+```
+```{r}
+cox.zph(cox_model_raw3)
+par(mfrow=c(2,4))
+plot(cox.zph(cox_model_raw3))
+```
+The model thus obtained respects the proportional risk hypothesis. We can stop here and interpret the obtained coefficients.
+But we will go a little further by discretizing the donor and patient age variables according to quartiles.
+
+```{r}
+library(caret)
+
+quartiles_aged = quantile(bmt2_merge$aged,probs = seq(0,1,0.25))
+bmt2_merge$aged_discret = cut(bmt2_merge$aged, quartiles_aged)
+quartiles_agep = quantile(bmt2_merge$agep,probs = seq(0,1,0.25))
+bmt2_merge$agep_discret = cut(bmt2_merge$agep, quartiles_agep)
+
+```
+
+```{r}
+bmt2_merge_small = bmt2_merge %>% drop_na()
+```
+
+```{r}
+cox_model = stepAIC(coxph(Surv(tstart,tstop,endpt)~group+agep_discret+aged_discret+genderp+
+                        genderd+cmvp+cmvd+waiting+p_recovery+
+                        fab+strata(hospital),data=bmt2_merge_small),trace=F)
+summary(cox_model)
+```
+
+```{r}
+cox_model_final = stepAIC(coxph(Surv(tstart,tstop,endpt)~group+agep_discret+p_recovery+
+                        fab+strata(hospital),data=bmt2_merge_small),trace=F)
+summary(cox_model_final)
+```
+```{r}
+cox.zph(cox_model_final)
+par(mfrow=c(2,4))
+plot(cox.zph(cox_model_final))
+```
+
+
+```{r}
+ggsurvplot(survfit(cox_model_final), conf.int = FALSE, 
+           surv.median.line="hv",xlab="Time",ylab="Disease Free Survival Indicator",
+           break.time.by=365,title=" Disease Free Survival curve using cox",
+           tables.height = 0.30,
+           font.main = c(12, "bold", "darkblue"),
+           font.x = c(8, "bold.italic", "red"),
+           font.y = c(8, "bold.italic", "darkred"),
+           font.tickslab = c(8, "plain", "darkgreen"),  
+           data = bmt2_merge_small)
+```
+
+
+## Interpretation of the coefficients of the final model
+
+- Patients in the AML low risk group have 2.26 times less chance of death or relapse after bone marrow transplantation than other patients.
+
+- Patients over 35 years of age have 2.19 times greater chance of death or relapse after bone marrow transplantation than other patients.
+
+- Patients with a return to normal platelets have 2.83 times less risk of death or relapse after a bone marrow transplant than other patients.
+
+```{r}
+bmt_group=survfit(Surv(dfs,dfsstatus)~group,data=bmt2_merge_small)
+ggsurvplot(bmt_group, conf.int = FALSE, 
+           surv.median.line="hv",xlab="Time",ylab="Disease Free Survival",
+           break.time.by=365,title="Disease Free Survival curve in fonction of group",
+           risk.table = TRUE,tables.height = 0.30,
+           font.main = c(12, "bold", "darkblue"),
+           font.x = c(8, "bold.italic", "red"),
+           font.y = c(8, "bold.italic", "darkred"),
+           font.tickslab = c(8, "plain", "darkgreen"), pval = TRUE, 
+           data = bmt2_merge_small)
+```
+
+
