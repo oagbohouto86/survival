@@ -26,20 +26,15 @@ In this work, we will see how to perform survival analysis in each case of probl
 
 # Requirements
 
-- R: survival 
-- Python: lifelines
+- R: survival surveminer timereg 
 
-# Documentation
+# References
+Cox DR (1972). Regression models and life tables (with discussion). J R Statist Soc B 34: 187–220
+MJ Bradburn, TG Clark, SB Love and DG Altman. Survival Analysis Part II: Multivariate data analysis – an introduction to concepts and methods. British Journal of Cancer (2003) 89, 431 – 436
+Clark TG, Bradburn MJ, Love SB and Altman DG. Survival Analysis Part I: Basic concepts and first analyses. British Journal of Cancer (2003) 89, 232 – 238
+Kaplan EL, Meier P (1958) Nonparametric estimation from incomplete observations. J Am Stat Assoc 53: 457–481.
+Pocock S, Clayton TC, Altman DG (2002) Survival plots of time-to-event outcomes in clinical trials: good practice and pitfalls. Lancet 359: 1686– 1689.
 
-https://en.wikipedia.org/wiki/Survival_function
-
-https://fr.wikipedia.org/wiki/Estimateur_de_Kaplan-Meier
-
-https://en.wikipedia.org/wiki/Proportional_hazards_model
-
-https://fr.wikipedia.org/wiki/R%C3%A9gression_de_Cox#Covariables_d%C3%A9pendantes_du_temps
-
-https://helios2.mi.parisdescartes.fr/~obouaziz/CoxSurv.pdf
 
 # Survival function and hazard ratio
 
@@ -50,7 +45,11 @@ Instantaneous risk (hazard rate): For a given t, this is the probability that th
 
 ![image](https://user-images.githubusercontent.com/101581394/159171925-f92b4914-18d1-4a33-9756-a8f54d17bc91.png)
 
-## Parametric survival function
+Pour plus d'informations sur la fonction de survie:
+https://en.wikipedia.org/wiki/Survival_function
+https://en.wikipedia.org/wiki/Proportional_hazards_model
+
+# Parametric survival function
 
 Lorsqu’on fait l’hypothèse selon laquelle les durées de survie appartiennent à une famille de loi donnée, nous sommes dans le cas d’estimation paramétrique. Le ou les paramètre(s) à déterminer dépendent donc de la famille de loi considérée. Ces paramètres peuvent être obtenus par maximisation de fonction de vraisemblance (algorithme itératif EM, algorithme itératif de Newton Raphson ou méthode de gradient). \
 We have several families of laws that model survival times and can therefore be used as hypotheses for estimating a survival function:
@@ -62,7 +61,7 @@ We have several families of laws that model survival times and can therefore be 
 For each of the above distributions, we can estimate the parameters of these laws in the case of complete data or censored data (more frequent in real life) in order to estimate survival probabilities or survival functions. 
 
 
-## Semi Parametric survival function
+# Semi Parametric survival function: Cox model
 
 The Cox model belongs to the class of semi-parametric models. It uses two approaches simultaneously: the non-parametric approach, i.e. it makes no a priori assumption about the distribution of survival times, and the approach of maximizing a partial likelihood function. The Cox model is widely used in practice for modeling survival times because it allows the estimation of the risks of event occurrence over time as a function of several explanatory factors. 
 
@@ -72,3 +71,16 @@ The Cox model makes a major assumption that is important to verify after the dat
 
 The obtained coefficients are interpreted as the relative risk in a logistic regression model.
 
+https://fr.wikipedia.org/wiki/R%C3%A9gression_de_Cox#Covariables_d%C3%A9pendantes_du_temps 
+
+https://helios2.mi.parisdescartes.fr/~obouaziz/CoxSurv.pdf
+
+# Non parametric survival function: Kaplan Meier
+
+The Kaplan-Meier estimator of survival times belongs to the class of non-parametric estimators.
+It is used when no hypothesis can be made about the distribution of survival times. The only assumptions that are made are continuity
+are the continuity and differentiability of the survival function.
+What is important to know is that the Kaplan Meier estimator does not allow us to estimate the survival function as a function of several explanatory variables. However, we can estimate the survival function in each of the groups of one or more explanatory variables considered as strata. 
+
+https://fr.wikipedia.org/wiki/Estimateur_de_Kaplan-Meier
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3059453/
