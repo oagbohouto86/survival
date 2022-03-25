@@ -1,4 +1,4 @@
-# survival
+# survival analysis
 
 **Survival analysis is the study of the probability of an event occurence (death, complication, relapse, infection,...) over time which is called *time-to-event* according to explanatory factors**. Thus, in survival analysis we look for:
 - The probability to survive at least a certain time "t" from a reference time 
@@ -37,6 +37,10 @@ https://fr.wikipedia.org/wiki/Estimateur_de_Kaplan-Meier
 
 https://en.wikipedia.org/wiki/Proportional_hazards_model
 
+https://fr.wikipedia.org/wiki/R%C3%A9gression_de_Cox#Covariables_d%C3%A9pendantes_du_temps
+
+https://helios2.mi.parisdescartes.fr/~obouaziz/CoxSurv.pdf
+
 # Survival function and hazard ratio
 
 The survival function is a function that gives the probability that a patient, device, or other object of interest will survive past a certain time.
@@ -56,3 +60,15 @@ We have several families of laws that model survival times and can therefore be 
 - log-logistic distribution
 - ...
 For each of the above distributions, we can estimate the parameters of these laws in the case of complete data or censored data (more frequent in real life) in order to estimate survival probabilities or survival functions. 
+
+
+## Semi Parametric survival function
+
+The Cox model belongs to the class of semi-parametric models. It uses two approaches simultaneously: the non-parametric approach, i.e. it makes no a priori assumption about the distribution of survival times, and the approach of maximizing a partial likelihood function. The Cox model is widely used in practice for modeling survival times because it allows the estimation of the risks of event occurrence over time as a function of several explanatory factors. 
+
+The Cox model is a special case of proportional hazard models. Proportional hazard models, as their name indicates, allow us to model a hazard function by multiplying a basic hazard function $lambda_0$ by a positive function depending on one or more explanatory variables $X_i$, $h(\beta,X)$.
+Thus, in the Cox model, the positive function $h(\beta,X)$ is the exponential function $exp(\beta,X)$.
+The Cox model makes a major assumption that is important to verify after the data have been modeled: the proportional hazard assumption: the explanatory parameters or variables have effects that are not time dependent. If this assumption is violated, it is possible either to split the data according to time, or to introduce a time-dependent variable or to check the function of the variables. Or combine all these methods.
+
+The obtained coefficients are interpreted as the relative risk in a logistic regression model.
+
