@@ -1,4 +1,4 @@
-# survival analysis
+# Survival analysis
 
 **Survival analysis is the study of the probability of an event occurence (death, complication, relapse, infection,...) over time which is called *time-to-event* according to explanatory factors**. Thus, in survival analysis we look for:
 - The probability to survive at least a certain time "t" from a reference time 
